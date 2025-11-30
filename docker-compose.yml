@@ -1,0 +1,104 @@
+version: "3"
+
+services:
+
+ # cadvisor:
+  #  container_name: cadvisor
+   # image: gcr.io/cadvisor/cadvisor:v0.49.1
+    #privileged: true
+#    ports:
+ #     - "8080:8080"
+#    volumes:
+ #     - /:/rootfs:ro
+  #    - /var/run:/var/run:rw
+   #   - /sys:/sys:ro
+    #  - /var/lib/docker/:/var/lib/docker:ro
+#    networks:
+#      - mynetwork
+
+#  prometheus:
+ #   container_name: prometheus
+  #  image: prom/prometheus:latest
+  #  ports:
+   #   - "9090:9090"
+  #  volumes:
+   #   - ./mcp-server-promethus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+   # depends_on:
+  #    - cadvisor
+  #  networks:
+  #    - mynetwork
+
+  docker-mcp:
+    build:
+      context: ./mcp_docker_server
+    container_name: docker-mcp
+    ports:
+      - "8000:8000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock  # REQUIRED
+    networks:
+      - mynetwork
+    user: root               
+    privileged: true  
+
+  monitoring-mcp:
+    build:
+      context: ./mcp-server-promethus
+    environment:
+      PROMETHEUS_URL: "http://172.17.99.132:30090/query"
+    ports:
+      - "9000:9000"
+   # depends_on:
+   #   - prometheus
+    networks:
+      - mynetwork
+  
+  k8s-mcp:
+    build:
+      context: ./mcp_k8s_server
+    ports:
+      - "7777:7777"
+    networks:
+      - mynetwork
+  
+  openstack-mcp:
+    build:
+      context: ./mcp_openstack_server
+    environment:
+      PROMETHEUS_URL: "http://172.17.99.132:30090/query"
+    ports:
+      - "7779:7779"
+    networks:
+      - mynetwork
+
+  agentservice:
+    build:
+      context: ./Openstack-ai-agent
+    environment:
+      MCP_MONITOR_URL: "http://monitoring-mcp:9000"
+      MCP_k8s_URL: "http://k8s-mcp:7777"
+      MCP_openstack_URL: "http://openstack-mcp:7779"
+      MCP_DOCKER_URL: "http://docker-mcp:8000"
+      mcp.server2.url: "http://monitoring-mcp:9000"
+      mcp.server1.url: "http://docker-mcp:8000"
+      mcp.server3.url: "http://k8s-mcp:9000"
+      mcp.server4.url: "http://openstack-mcp:7779"
+      
+    ports:
+      - "8888:8888"
+    depends_on:
+      - monitoring-mcp
+    networks:
+      - mynetwork
+
+  agentuiservice:
+    build:
+      context: ./agentUI
+    ports:
+      - "80:80"
+    networks:
+      - mynetwork
+
+networks:
+  mynetwork:
+    driver: bridge

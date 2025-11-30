@@ -1,0 +1,57 @@
+
+
+<div class="card shadow-sm border-0 rounded-3 p-4 " style="background-color: rgb(243, 242, 241);">
+  <div class="card-body">
+    <h5 class="card-title fw-semibold mb-4 text-primary">
+      Ask the Agent
+    </h5>
+
+    <div class="input-group mb-3">
+      <input
+        [(ngModel)]="query"
+        type="text"
+        class="form-control form-control-lg"
+        placeholder="Type your question here..."
+        (keyup.enter)="askAgent()"
+      />
+      <button
+        class="btn btn-primary btn-lg px-4"
+        type="button"
+        (click)="askAgent()"
+      >
+        <i class="bi bi-send"></i> Send
+      </button>
+    </div>
+
+    @if (progress) {
+    <div class="text-center my-3">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+      <p class="mt-2 text-muted small">Processing your question...</p>
+    </div>
+    }
+      <!--  List of all past questions and responses -->
+  <div class="card-footer bg-white mt-3 border-0 shadow-md" *ngFor="let item of history.slice().reverse()">
+    <h6 class="fw-bold text-secondary mb-2" style="display: flex; justify-content: flex-end;">Question:</h6>
+    <div style="display: flex; justify-content: flex-end;">
+  <div class="p-3 border rounded shadow-sm mb-2"
+       style="background-color: rgb(84, 161, 250);
+              color: aliceblue;
+              width: fit-content;
+              max-width: 80%;
+              text-align: right;">
+    {{ item.question }}
+  </div>
+</div>
+
+
+    <h6 class="fw-bold text-secondary mb-2">Response:</h6>
+    <div class="p-3 border rounded bg-white shadow-sm">
+      <markdown [data]="item.answer"></markdown>
+    </div>
+  </div>
+</div>
+  </div>
+
+
