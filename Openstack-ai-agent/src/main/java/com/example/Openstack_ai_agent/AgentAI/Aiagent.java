@@ -257,25 +257,27 @@ public class Aiagent {
                             .user(json)
                             .stream()
                             .content());
-        } else if (lower.contains("k8s") &&
-                lower.contains("log") && // logs, log
-                lower.contains("pod") // pod name
+        } else if (lower.contains("@k8s-boot") &&
+                lower.contains("list") && // logs, log
+                lower.contains("pods") // pod name
         ) {
-            String[] np = extractNamespaceAndPod(lower);
-            String namespace = np[0];
-            String pod = np[1];
+           
 
-            return mcpClientk8s.getPodLogs(namespace, pod)
-                    .flatMapMany(logs -> chatClient.prompt()
+            return mcpClientk8s.listPods()
+                    .flatMapMany(json -> chatClient.prompt()
                             .system("""
-                                        You are a Kubernetes log analysis assistant.
-                                        Analyze these pod logs:
-                                        - Detect errors (CrashLoopBackOff, OOMKilled, ImagePull errors)
-                                        - Summarize the root cause
-                                        - Suggest 1–3 fixes
-                                        - Use emojis and concise explanations
+                                        You are a Kubernetes assistant.
+                                        Use emojis and concise explanations.
+                                        Format this pod list cleanly using:
+                                        - Pod name
+                                        - Namespace
+                                        - Status
+                                        - Node
+                                        - Restarts
+                                        - Age
+                                        
                                     """)
-                            .user(logs)
+                            .user(json)
                             .stream()
                             .content());
         }
