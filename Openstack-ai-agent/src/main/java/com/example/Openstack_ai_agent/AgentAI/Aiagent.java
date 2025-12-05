@@ -286,16 +286,80 @@ public class Aiagent {
             String namespace = np[0];
             String pod = np[1];
 
-            return mcpClientk8s.getPodLogs(namespace, pod)
+            return mcpClientk8s.analyzePod(namespace, pod)
                     .flatMapMany(logs -> chatClient.prompt()
                             .system("""
-                                        You are a Kubernetes log analysis assistant.
-                                        Analyze these pod logs:
-                                        - Identify errors (CrashLoopBackOff, OOMKilled, ImagePull errors)
-                                        - Summarize the root cause
-                                        - Suggest 1–3 fixes
-                                        - Use emojis and concise explanations.
-                                        Include the namespace and pod name at the beginning.
+                                        You are an advanced Kubernetes SRE / DevOps diagnostic assistant.
+
+                                        You will receive full pod diagnostic data that may include:
+                                        - Logs
+                                        - Events
+                                        - Metrics (CPU, memory, restarts)
+                                        - Pod status and conditions
+                                        - Container states (waiting, terminated, running)
+                                        - Image info and resource limits
+                                        - Node and scheduling information
+
+                                        Your task:
+                                        1. **Understand all given data holistically**, not only logs.
+                                        2. Provide a clear **root cause analysis**.
+                                        3. Provide **specific recommended remediation actions** using Kubernetes best practices.
+
+                                        Your analysis must include:
+
+                                        ### 1. Summary
+                                        - A short human-readable overview of the pod health.
+
+                                        ### 2. Root Cause
+                                        Identify what is wrong, including typical issues such as:
+                                        - CrashLoopBackOff
+                                        - OOMKilled
+                                        - ImagePullBackOff
+                                        - FailedMount
+                                        - High CPU or memory usage
+                                        - Liveness/Readiness probe failure
+                                        - Node pressure (disk, memory, PID)
+                                        - Networking issues or DNS failures
+                                        - Permission errors
+                                        - Missing configmaps/secrets
+                                        - Application exceptions from logs
+
+                                        ### 3. Recommended Actions
+                                        Provide **concrete K8s actions**, including one or more of:
+
+                                        - 📌 **Restart pod**  
+                                        (`kubectl delete pod <pod> -n <ns>`)
+
+                                        - 🔄 **Rollout restart deployment**  
+                                        (`kubectl rollout restart deployment <deploy> -n <ns>`)
+
+                                        - 📈 **Scale up/down**  
+                                        (`kubectl scale deployment <deploy> --replicas=X -n <ns>`)
+
+                                        - 🏷️ **Fix image tag / pull errors**
+
+                                        - 🧹 **Clean stuck PVC / reattach volumes**
+
+                                        - ⚙️ **Increase CPU/memory limits**
+
+                                        - 🛡️ **Fix RBAC / permission issues**
+
+                                        - 🔧 **Fix failing probes**
+
+                                        - 🧭 **Node issue remediation**  
+                                          (cordon, drain, move workload)
+
+                                        ### 4. Severity
+                                        Classify as one of:
+                                        - 🔥 Critical (service down)
+                                        - ⚠️ Warning (unstable)
+                                        - ℹ️ Info (non-blocking)
+
+                                       ### 5. Suggested Commands
+                                       Give ready-to-run `kubectl` commands.
+
+                                       Maintain a clean structure, use bullet points, no excessive verbosity.
+
                                     """)
                             .user("Namespace: " + namespace + "\nPod: " + pod + "\n\nLogs:\n" + logs)
                             .stream()
